@@ -1,0 +1,37 @@
+name: odys_service_tool
+description: Offline BLE dashboard and guarded BLDC firmware updater for compatible ODYS scooters.
+publish_to: none
+version: 1.0.1+111
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.35.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  crypto: 3.0.6
+  battery_plus: 7.1.1
+  encrypt: 5.0.3
+  cryptography: 2.7.0
+  flutter_blue_plus: 1.35.5
+  path_provider: 2.1.5
+  permission_handler: 11.3.1
+  share_plus: 10.1.4
+  shared_preferences: 2.5.5
+  wakelock_plus: 1.2.10
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: 5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/firmware/bldc_stock_de.bin
+    - assets/firmware/BLDC_DE_32kmh_Kick1_Normal2_DualCRC.bin
+    - assets/firmware/BLDC_DE_40kmh_EXPERIMENTAL_Kick1_Normal2_DualCRC.bin
+    - assets/firmware/BLDC_DE_40kmh_Kick2kmh_Normal2_DualCRC.bin
+    - assets/firmware/catalog.json
+    - assets/firmware/catalog.sig

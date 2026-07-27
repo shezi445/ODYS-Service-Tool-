@@ -1,0 +1,76 @@
+name: Build signed Android release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Complete Flutter platform scaffolding
+        run: flutter create --platforms=android,ios --project-name odys_service_tool --org com.odys .
+
+      - name: Resolve packages
+        run: flutter pub get
+
+      - name: Configure release signing
+        env:
+          ODYS_KEYSTORE_B64: ${{ secrets.ODYS_KEYSTORE_B64 }}
+          ODYS_STORE_PASSWORD: ${{ secrets.ODYS_STORE_PASSWORD }}
+          ODYS_KEY_ALIAS: ${{ secrets.ODYS_KEY_ALIAS }}
+          ODYS_KEY_PASSWORD: ${{ secrets.ODYS_KEY_PASSWORD }}
+        run: |
+          test -n "$ODYS_KEYSTORE_B64"
+          printf '%s' "$ODYS_KEYSTORE_B64" | base64 --decode > android/app/odys-release.jks
+          {
+            echo "storeFile=odys-release.jks"
+            echo "storePassword=$ODYS_STORE_PASSWORD"
+            echo "keyAlias=$ODYS_KEY_ALIAS"
+            echo "keyPassword=$ODYS_KEY_PASSWORD"
+          } > android/key.properties
+
+      - name: Static analysis
+        run: flutter analyze
+
+      - name: Protocol and firmware tests
+        run: flutter test
+
+      - name: Verify embedded firmware independently
+        run: |
+          node tool/verify_firmware.js
+          node tool/source_audit.js
+
+      - name: Build APK
+        env:
+          SOURCE_DATE_EPOCH: "1785024000"
+        run: |
+          flutter build apk --release \
+            --build-name 1.0.0 \
+            --build-number 110 \
+            --obfuscate \
+            --split-debug-info build/symbols
+          sha256sum build/app/outputs/flutter-apk/app-release.apk \
+            > build/app/outputs/flutter-apk/app-release.apk.sha256
+          flutter pub deps --style=compact > build/dependency-tree.txt
+
+      - name: Publish APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ODYS-Service-Tool-Android
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/flutter-apk/app-release.apk.sha256
+            build/dependency-tree.txt
+            build/symbols
+          if-no-files-found: error
+          retention-days: 30

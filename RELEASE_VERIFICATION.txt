@@ -1,0 +1,40 @@
+ODYS Service Tool 1.0.0+110 — EXPERIMENTAL 40
+Verification date: 2026-07-26
+
+PASSED LOCALLY
+- Attached APK identified as build 101; working authentication path preserved.
+- Original stock and verified 32 km/h firmware hashes and dual CRCs.
+- Reproducibly generated experimental 40 km/h / Kick1-Normal2 image.
+- 40 km/h raw word 864, inner CRC AF79, outer CRC E430.
+- All 11 linked motor-start patch locations.
+- Generated 25/30/32/40 profiles pass both CRC layers.
+- Ed25519 catalogue signature and all three catalogue asset hashes.
+- Source safety/reliability invariant audit.
+- Android status-62 recovery and GATT-channel discovery source checks.
+- Complete BLE TX/RX packet diagnostics.
+- Exact BLDC 0.0.0.3 gate and separate experimental-risk acknowledgement.
+- Original-firmware restore selection.
+- Dart SDK-compatible ASCII codec.
+- Release-key workflow, exact dependency pins and version 1.0.0+110.
+
+FIRMWARE IDENTITIES
+- Original DE
+  SHA-256 2640a3f4ff96642eb655d046238b4da7dd6c5f0195cf2424867b063dbe2cb5e5
+  Speed 476, inner CRC 0B09, outer CRC 063A
+- Verified 32 km/h / Kick1-Normal2 reference
+  SHA-256 77481c37205cae47d996e109bbeb62521e23fa3d1e190bff25092fd35c265874
+  Speed 692, inner CRC 757A, outer CRC E444
+- Experimental 40 km/h / Kick1-Normal2
+  SHA-256 ec295b947e024adfb2a05ff4bc7d3cc5ef5c33f49f78ed11cbc6d258b7a44585
+  Speed 864, inner CRC AF79, outer CRC E430
+
+NOT RUN IN THIS WORKSPACE
+- Flutter analysis, Dart unit tests and Android APK compilation: Flutter/Android
+  SDK unavailable.
+- Physical scooter tests and deliberate BLE interruption at each DFU stage.
+- Telemetry comparison with the official app.
+- iOS build and physical iPhone validation.
+- English/German/Urdu localization.
+
+The 40 km/h profile is not road- or hardware-validated. Use only on closed
+private property after stock restore and 32 km/h reference testing.
