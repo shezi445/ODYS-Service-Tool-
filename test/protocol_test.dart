@@ -218,6 +218,11 @@ void main() {
         'BLDC_DE_40kmh_EXPERIMENTAL_Kick1_Normal2_DualCRC.bin',
       ).readAsBytesSync(),
     );
+    final experimental40Kick2 = Uint8List.fromList(
+      File(
+        'assets/firmware/BLDC_DE_40kmh_Kick2kmh_Normal2_DualCRC.bin',
+      ).readAsBytesSync(),
+    );
     for (final speed in SpeedProfile.values) {
       for (final start in MotorStartProfile.values) {
         if (speed == SpeedProfile.stock && start != MotorStartProfile.stock) {
@@ -227,10 +232,18 @@ void main() {
             start != MotorStartProfile.kick1Normal2) {
           continue;
         }
+        // The Kick-2 image is a fixed binary with its own motor-start
+        // behaviour baked in, so it is only built once rather than once per
+        // selectable start profile.
+        if (speed == SpeedProfile.experimental40Kick2 &&
+            start != MotorStartProfile.stock) {
+          continue;
+        }
         final image = FirmwareTools.buildProfile(
           stock: stock,
           verified32: verified,
           experimental40: experimental40,
+          experimental40Kick2: experimental40Kick2,
           speed: speed,
           motorStart: start,
         );

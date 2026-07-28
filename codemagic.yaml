@@ -1,45 +1,35 @@
 workflows:
-  ios-release:
-    name: iOS Release
+  ios-build:
+    name: iOS Build (No Signing)
     max_build_duration: 60
     instance_type: mac_mini_m2
     environment:
       flutter: stable
       xcode: latest
       cocoapods: default
-      groups:
-        - app_store_credentials
-      vars:
-        BUNDLE_ID: "com.odys.servicetool"
-        APP_STORE_CONNECT_ISSUER_ID: Encrypted(...)
-        APP_STORE_CONNECT_KEY_IDENTIFIER: Encrypted(...)
-        APP_STORE_CONNECT_PRIVATE_KEY: Encrypted(...)
-        CERTIFICATE_PRIVATE_KEY: Encrypted(...)
     scripts:
-      - name: Set up code signing
-        script: |
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
-      - name: Set up code signing Xcode project
-        script: |
-          xcode-project use-profiles
-      - name: Install CocoaPods
-        script: |
-          cd ios && pod install
       - name: Flutter pub get
         script: |
           flutter pub get
-      - name: Build iOS IPA
+      - name: Install CocoaPods
         script: |
-          flutter build ipa --release \
+          cd ios && pod install
+      - name: Build iOS (no codesign)
+        script: |
+          flutter build ios --release --no-codesign \
             --build-name=1.0.1 \
-            --build-number=111 \
-            --export-options-plist=/Users/builder/export_options.plist
+            --build-number=111
+      - name: Package unsigned IPA
+        script: |
+          cd build/ios/iphoneos
+          mkdir -p Payload
+          cp -r Runner.app Payload/
+          zip -r ODYS_Service_Tool_unsigned.ipa Payload
+          mv ODYS_Service_Tool_unsigned.ipa $CM_BUILD_DIR/
     artifacts:
-      - build/ios/ipa/*.ipa
+      - ./*.ipa
+      - build/ios/iphoneos/*.app
       - /tmp/xcodebuild_logs/*.log
-      - flutter_drive.log
     publishing:
       email:
         recipients:
@@ -47,10 +37,6 @@ workflows:
         notify:
           success: true
           failure: true
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: false
-        submit_to_app_store: false
 
   android-release:
     name: Android Release

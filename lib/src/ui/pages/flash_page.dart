@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../ble/odys_ble_client.dart';
 import '../../models.dart';
 import '../../protocol/firmware_tools.dart';
+import '../brand.dart';
 import '../odys_theme.dart';
 
 class FlashPage extends StatelessWidget {
@@ -20,11 +21,13 @@ class FlashPage extends StatelessWidget {
     required this.phoneBatteryPercent,
     required this.preflightOk,
     required this.preflightReason,
+    required this.attempt,
     required this.onSpeedChanged,
     required this.onMotorStartChanged,
     required this.onStationaryChanged,
     required this.onExperimentalChanged,
     required this.onFlash,
+    required this.onRetryFlash,
     required this.onRestore,
     required this.onCancelFlash,
   });
@@ -41,11 +44,13 @@ class FlashPage extends StatelessWidget {
   final int? phoneBatteryPercent;
   final bool preflightOk;
   final String preflightReason;
+  final int attempt;
   final ValueChanged<SpeedProfile?> onSpeedChanged;
   final ValueChanged<MotorStartProfile?> onMotorStartChanged;
   final ValueChanged<bool?> onStationaryChanged;
   final ValueChanged<bool?> onExperimentalChanged;
   final VoidCallback onFlash;
+  final VoidCallback onRetryFlash;
   final VoidCallback onRestore;
   final VoidCallback onCancelFlash;
 
@@ -61,16 +66,7 @@ class FlashPage extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
         // ── Header ──
-        const Padding(
-          padding: EdgeInsets.only(bottom: 16),
-          child: Text('Firmware',
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                color: AppColors.text,
-                letterSpacing: -0.5,
-              )),
-        ),
+        const PageHeader(title: 'Firmware'),
 
         // ── Profile section ──
         _Section(
@@ -79,7 +75,7 @@ class FlashPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               DropdownButtonFormField<SpeedProfile>(
-                value: speed,
+                initialValue: speed,
                 decoration: const InputDecoration(labelText: 'Speed limit'),
                 dropdownColor: AppColors.surfaceHi,
                 items: SpeedProfile.values
@@ -90,7 +86,7 @@ class FlashPage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<MotorStartProfile>(
-                value: motorStart,
+                initialValue: motorStart,
                 decoration:
                     const InputDecoration(labelText: 'Motor-start profile'),
                 dropdownColor: AppColors.surfaceHi,
@@ -117,7 +113,7 @@ class FlashPage extends StatelessWidget {
                     color: AppColors.dangerDim,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                        color: AppColors.danger.withOpacity(0.3)),
+                        color: AppColors.danger.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,7 +128,7 @@ class FlashPage extends StatelessWidget {
                           'Private property only.',
                           style: TextStyle(
                             fontSize: 13,
-                            color: AppColors.text.withOpacity(0.85),
+                            color: AppColors.text.withValues(alpha: 0.85),
                             height: 1.4,
                           ),
                         ),
@@ -256,13 +252,34 @@ class FlashPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    progress.stage,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: AppColors.text,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          progress.stage,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: AppColors.text,
+                          ),
+                        ),
+                      ),
+                      if (attempt > 1)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceHi,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text('Attempt $attempt',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textDim,
+                              )),
+                        ),
+                    ],
                   ),
                   if (progress.detail.isNotEmpty) ...[
                     const SizedBox(height: 4),
@@ -296,6 +313,43 @@ class FlashPage extends StatelessWidget {
                           color: AppColors.textDim,
                         ),
                       ),
+                    ),
+                  ],
+
+                  // ── Retry after failure ──
+                  if (progress.failed && !flashing) ...[
+                    const SizedBox(height: 12),
+                    const Text(
+                      'The transfer stopped before the controller confirmed '
+                      'the image. Run Recovery in Tools if the scooter is '
+                      'unresponsive, otherwise retry with the same image.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textDim,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: prepared != null && preflightOk
+                                ? onRetryFlash
+                                : null,
+                            icon: const Icon(Icons.refresh_rounded, size: 18),
+                            label: const Text('Retry flash'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: onRestore,
+                            icon: const Icon(Icons.restore_rounded, size: 18),
+                            label: const Text('Restore'),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ],
@@ -442,7 +496,7 @@ class _FirmwareId extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isVerified
-              ? AppColors.primary.withOpacity(0.25)
+              ? AppColors.primary.withValues(alpha: 0.25)
               : AppColors.border,
         ),
       ),

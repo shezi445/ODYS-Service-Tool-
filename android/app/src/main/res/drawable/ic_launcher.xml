@@ -1,9 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Splash mark. Mirrors tool/make_icon.py, minus the sweep gradient: a vector
+     drawable cannot taper a stroke, so the splash uses a uniform arc in the
+     primary colour. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:fillColor="#102A43" android:pathData="M0,0h108v108h-108z" />
-    <path android:fillColor="#43B5E8" android:pathData="M20,54a34,34 0,1 0,68 0a34,34 0,1 0,-68 0" />
-    <path android:fillColor="#FFFFFF" android:pathData="M48,22h12v25h-12zM48,61h12v25h-12zM22,48h25v12h-25zM61,48h25v12h-25z" />
+
+    <!-- Gauge sweep: 280 degrees, gap centred on the bottom. -->
+    <path
+        android:pathData="M34.72,76.98 A30,30 0 1 1 73.28,76.98"
+        android:strokeColor="#38D39F"
+        android:strokeWidth="9"
+        android:strokeLineCap="round" />
+
+    <!-- Needle at 55 degrees, with a blunt counterweight. -->
+    <path
+        android:fillColor="#EAF1F8"
+        android:pathData="M67.77,34.34 L51.71,52.39 L48.80,57.00 L52.96,59.91 L56.29,55.61 Z" />
+
+    <!-- Hub. -->
+    <path
+        android:fillColor="#EAF1F8"
+        android:pathData="M49.8,54 a4.2,4.2 0 1,0 8.4,0 a4.2,4.2 0 1,0 -8.4,0" />
+    <path
+        android:fillColor="#0F1724"
+        android:pathData="M51.6,54 a2.4,2.4 0 1,0 4.8,0 a2.4,2.4 0 1,0 -4.8,0" />
 </vector>

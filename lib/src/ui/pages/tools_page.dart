@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../ble/odys_ble_client.dart';
 import '../../models.dart';
+import '../brand.dart';
 import '../odys_theme.dart';
 
 class ToolsPage extends StatelessWidget {
@@ -25,16 +26,7 @@ class ToolsPage extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
         // ── Header ──
-        const Padding(
-          padding: EdgeInsets.only(bottom: 16),
-          child: Text('Tools',
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                color: AppColors.text,
-                letterSpacing: -0.5,
-              )),
-        ),
+        const PageHeader(title: 'Tools'),
 
         // ── Firmware versions ──
         _Section(
@@ -63,7 +55,7 @@ class ToolsPage extends StatelessWidget {
                   children: [
                     _InfoRow(
                         'Device',
-                        client.device?.platformName?.isNotEmpty == true
+                        client.device?.platformName.isNotEmpty == true
                             ? client.device!.platformName
                             : client.device?.remoteId.str ?? '—'),
                     _InfoRow('Phase', client.phase.name),
@@ -249,7 +241,7 @@ class _ActionTile extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.12),
+                  color: iconColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, size: 20, color: iconColor),

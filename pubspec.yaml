@@ -15,6 +15,7 @@ dependencies:
   encrypt: 5.0.3
   cryptography: 2.7.0
   flutter_blue_plus: 1.35.5
+  geolocator: ^13.0.2
   path_provider: 2.1.5
   permission_handler: 11.3.1
   share_plus: 10.1.4
@@ -25,10 +26,22 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: 5.0.0
+  flutter_launcher_icons: ^0.14.1
+
+# Regenerate with: dart run flutter_launcher_icons
+# The source PNGs come from tool/make_icon.py.
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/brand/odys_icon.png"
+  adaptive_icon_background: "#070B12"
+  adaptive_icon_foreground: "assets/brand/odys_icon_fg.png"
+  remove_alpha_ios: true
 
 flutter:
   uses-material-design: true
   assets:
+    - assets/brand/odys_icon.png
     - assets/firmware/bldc_stock_de.bin
     - assets/firmware/BLDC_DE_32kmh_Kick1_Normal2_DualCRC.bin
     - assets/firmware/BLDC_DE_40kmh_EXPERIMENTAL_Kick1_Normal2_DualCRC.bin

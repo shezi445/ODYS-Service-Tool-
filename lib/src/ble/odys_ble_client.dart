@@ -51,6 +51,11 @@ class OdysBleClient extends ChangeNotifier {
   String? lastConnectionError;
   int? rssi;
 
+  /// When true, a dropped link is retried more persistently. Set from the
+  /// user's auto-reconnect preference; a drop is always retried at least
+  /// three times regardless, because that path predates the setting.
+  bool autoReconnect = true;
+
   bool get connected =>
       phase == ConnectionPhase.authenticating ||
       phase == ConnectionPhase.connected ||
@@ -97,7 +102,15 @@ class OdysBleClient extends ChangeNotifier {
     }
   }
 
-  Future<void> connect(ScanResult result, {required int accountId}) async {
+  Future<void> connect(ScanResult result, {required int accountId}) =>
+      connectToDevice(result.device, accountId: accountId);
+
+  /// Connects to a device by object rather than by scan result, so a saved
+  /// remote ID can be reconnected to without scanning first.
+  Future<void> connectToDevice(
+    BluetoothDevice target, {
+    required int accountId,
+  }) async {
     if (accountId <= 0 || accountId > 0xffffffff) {
       throw ArgumentError.value(
         accountId,
@@ -108,6 +121,14 @@ class OdysBleClient extends ChangeNotifier {
     if (_connectOperationInProgress) {
       throw StateError('A Bluetooth connection attempt is already running');
     }
+    // A direct connect may be the first BLE operation of the session, so the
+    // runtime permissions scan() normally asks for are not guaranteed yet.
+    if (Platform.isAndroid) {
+      await <Permission>[
+        Permission.bluetoothScan,
+        Permission.bluetoothConnect,
+      ].request();
+    }
     _connectOperationInProgress = true;
     _suppressAutoRecovery = true;
     _manualDisconnect = false;
@@ -115,7 +136,6 @@ class OdysBleClient extends ChangeNotifier {
     lastConnectionError = null;
     phase = ConnectionPhase.connecting;
     notifyListeners();
-    final target = result.device;
     try {
       await FlutterBluePlus.stopScan();
       // Several Android BLE stacks fail with status 62 when connect is started
@@ -708,9 +728,14 @@ class OdysBleClient extends ChangeNotifier {
         : ConnectionPhase.reconnecting;
     notifyListeners();
     final target = device!;
-    for (var attempt = 1; attempt <= 3 && !_manualDisconnect; attempt++) {
-      log.add('Reconnect attempt $attempt/3');
-      await Future<void>.delayed(Duration(seconds: attempt * 2));
+    final maxAttempts = autoReconnect ? 6 : 3;
+    for (var attempt = 1; attempt <= maxAttempts && !_manualDisconnect; attempt++) {
+      log.add('Reconnect attempt $attempt/$maxAttempts');
+      // Back off linearly, capped so a long retry tail does not stretch the
+      // gap between attempts past a minute.
+      await Future<void>.delayed(
+        Duration(seconds: (attempt * 2).clamp(2, 20)),
+      );
       try {
         await _connectDevice(target);
         log.add('Reconnect successful');
