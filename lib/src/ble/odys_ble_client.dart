@@ -71,34 +71,107 @@ class OdysBleClient extends ChangeNotifier {
           const Duration(seconds: 5);
 
   Future<void> scan() async {
-    if (Platform.isAndroid) {
-      await <Permission>[
-        Permission.bluetoothScan,
-        Permission.bluetoothConnect,
-        Permission.locationWhenInUse,
-      ].request();
-    }
-    scanResults.clear();
-    phase = ConnectionPhase.scanning;
-    notifyListeners();
-    await _scanSubscription?.cancel();
-    _scanSubscription = FlutterBluePlus.scanResults.listen((results) {
-      scanResults
-        ..clear()
-        ..addAll(results.where((r) {
-          final name = r.advertisementData.advName.toLowerCase();
-          return name.isNotEmpty ||
-              r.advertisementData.serviceUuids.any(
-                (u) => u.str.toLowerCase() == OdysProtocol.serviceUuid,
-              );
-        }));
+    try {
+      if (Platform.isAndroid) {
+        final statuses = await <Permission>[
+          Permission.bluetoothScan,
+          Permission.bluetoothConnect,
+          Permission.locationWhenInUse,
+        ].request();
+
+        final denied = statuses.values.any(
+          (status) => status.isDenied || status.isPermanentlyDenied,
+        );
+
+        if (denied) {
+          throw StateError(
+            'Bluetooth permission was denied. Enable it in phone settings.',
+          );
+        }
+      }
+
+      final supported = await FlutterBluePlus.isSupported;
+      if (!supported) {
+        throw StateError('Bluetooth is not supported on this device.');
+      }
+
+      BluetoothAdapterState adapterState =
+          await FlutterBluePlus.adapterState.first;
+
+      if (adapterState == BluetoothAdapterState.unknown) {
+        adapterState = await FlutterBluePlus.adapterState
+            .where((state) => state != BluetoothAdapterState.unknown)
+            .first
+            .timeout(const Duration(seconds: 10));
+      }
+
+      if (adapterState != BluetoothAdapterState.on) {
+        throw StateError(
+          'Bluetooth must be turned on. Current state: $adapterState',
+        );
+      }
+
+      if (FlutterBluePlus.isScanningNow) {
+        await FlutterBluePlus.stopScan();
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+      }
+
+      scanResults.clear();
+      lastConnectionError = null;
+      phase = ConnectionPhase.scanning;
       notifyListeners();
-    });
-    await FlutterBluePlus.startScan(timeout: const Duration(seconds: 12));
-    await FlutterBluePlus.isScanning.where((value) => !value).first;
-    if (phase == ConnectionPhase.scanning) {
-      phase = ConnectionPhase.disconnected;
-      notifyListeners();
+
+      await _scanSubscription?.cancel();
+      _scanSubscription = FlutterBluePlus.scanResults.listen(
+        (results) {
+          scanResults
+            ..clear()
+            ..addAll(results.where((result) {
+              final name =
+                  result.advertisementData.advName.toLowerCase();
+
+              return name.isNotEmpty ||
+                  result.advertisementData.serviceUuids.any(
+                    (uuid) =>
+                        uuid.str.toLowerCase() == OdysProtocol.serviceUuid,
+                  );
+            }));
+
+          notifyListeners();
+        },
+        onError: (Object error) {
+          lastConnectionError = 'Bluetooth scan failed: $error';
+          log.add(lastConnectionError!);
+
+          if (phase == ConnectionPhase.scanning) {
+            phase = ConnectionPhase.disconnected;
+          }
+
+          notifyListeners();
+        },
+      );
+
+      await FlutterBluePlus.startScan(
+        timeout: const Duration(seconds: 12),
+      );
+
+      await FlutterBluePlus.isScanning
+          .where((isScanning) => !isScanning)
+          .first;
+    } on TimeoutException {
+      lastConnectionError =
+          'Bluetooth initialization timed out. Turn Bluetooth on and try again.';
+      log.add(lastConnectionError!);
+      throw StateError(lastConnectionError!);
+    } catch (error) {
+      lastConnectionError = error.toString();
+      log.add('Bluetooth scan error: $error');
+      rethrow;
+    } finally {
+      if (phase == ConnectionPhase.scanning) {
+        phase = ConnectionPhase.disconnected;
+        notifyListeners();
+      }
     }
   }
 
